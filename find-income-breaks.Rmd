@@ -1,0 +1,52 @@
+---
+title: "Regional Income Breakpoints"
+author: "suzanne"
+date: "2023-10-17"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+library(psrccensus)
+library(srvyr)
+library(tidyr)
+```
+
+We're getting the breakpoints for regional household income quantiles from PUMS.
+
+Here is the latest schedule of data releases for 2022 https://www.census.gov/programs-surveys/acs/news/data-releases/2022/release.html#:~:text=Release%20Schedule&text=The%202022%20ACS%201%2Dyear%20Public%20Use%20Microdata%20Sample%20(PUMS,visit%202022%20ACS%20Release%20Schedule
+
+Switch in the dyear if you want to get the latest data. 
+
+```{r }
+hh_inc<-get_psrc_pums(span=5, dyear=2021, level="h", vars=c("HINCP"))
+```
+Apply survey quantile function from srvyr
+https://rdrr.io/cran/srvyr/man/survey_quantile.html
+
+```{r}
+quantiles_4<-c(from=0.25, to=0.75, by = 0.25)
+quantiles_5<-seq(from=0.2, to=0.8, by =0.2)
+quantiles_10<-seq(from=0.1, to=0.9, by =0.1)
+
+hh_inc_4<-hh_inc %>%
+        summarise(hhinc_quintile=round(survey_quantile(HINCP, quantiles_4), -3))%>%
+  pivot_longer(cols=starts_with('hhinc_quintile'), names_to='income_group',  values_to='breakpoint')
+
+hh_inc_5<-hh_inc %>%
+        summarise(hhinc_quintile=round(survey_quantile(HINCP, quantiles_5), -3))%>%
+  pivot_longer(cols=starts_with('hhinc_quintile'), names_to='income_group',  values_to='breakpoint')
+
+
+hh_inc_10<-hh_inc %>%
+  summarise(hhinc_quintile=round(survey_quantile(HINCP, quantiles_10), -3))%>%
+  pivot_longer(cols=starts_with('hhinc_quintile'), names_to='income_group',  values_to='breakpoint')
+
+hh_inc_4
+hh_inc_5
+hh_inc_10
+
+```
+
